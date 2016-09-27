@@ -10,8 +10,8 @@ float busVoltage = 0;
 float currentMa = 0;
 float loadVoltage = 0;
 
-const int sleepTimeS = 300;
-unsigned long lastSent = 0;
+const int sleepTimeS = 60;
+bool sentOnce = false;
 
 HomieNode BatteryLoadVoltageNode("batteryLoadVoltage", "voltage");
 HomieNode BatteryCurrentNode("batteryCurrent", "millamps");
@@ -26,26 +26,34 @@ void setupHandler() {
 }
 
 void loopHandler() {
+  if (!sentOnce) {
     shuntVoltage = solar.getShuntVoltage_mV();
     busVoltage = solar.getBusVoltage_V();
     currentMa = solar.getCurrent_mA();
     loadVoltage = busVoltage + (shuntVoltage / 1000);
-
-    Homie.setNodeProperty(SolarLoadVoltageNode, "volts").send(String(loadVoltage));
-    Homie.setNodeProperty(SolarCurrentNode, "milliamps").send(String(currentMa));
-
+    if (Homie.isConnected()) {
+      Homie.setNodeProperty(SolarLoadVoltageNode, "volts").send(String(loadVoltage));
+      Homie.setNodeProperty(SolarCurrentNode, "milliamps").send(String(currentMa));
+    }
     shuntVoltage = battery.getShuntVoltage_mV();
     busVoltage = battery.getBusVoltage_V();
     currentMa = battery.getCurrent_mA();
-    loadVoltage = busVoltage + (shuntVoltage / 1000);
-
-    Homie.setNodeProperty(BatteryLoadVoltageNode, "volts").send(String(loadVoltage));
-    Homie.setNodeProperty(BatteryCurrentNode, "milliamps").send(String(currentMa));
-    Homie.prepareForSleep();
+    loadVoltage = busVoltage + (shuntVoltage / 1000);s
+    if (Homie.isConnected()) {
+      Homie.setNodeProperty(BatteryLoadVoltageNode, "volts").send(String(loadVoltage));
+      Homie.setNodeProperty(BatteryCurrentNode, "milliamps").send(String(currentMa));
+    }
+    sentOnce = true;
+  }
 }
 
 void onHomieEvent(HomieEvent event) {
   switch(event) {
+    case HomieEvent::MQTT_CONNECTED:
+      Serial.println("MQTT connected, preparing for deep sleep...");
+      sentOnce = false;
+      Homie.prepareForSleep();
+      break;
     case HomieEvent::READY_FOR_SLEEP:
       Serial.println("Sleepy time");
       ESP.deepSleep(sleepTimeS * 1000000);
