@@ -27,6 +27,7 @@ void setupHandler() {
 
 void loopHandler() {
   if (!sentOnce) {
+    sentOnce = true;
     shuntVoltage = solar.getShuntVoltage_mV();
     busVoltage = solar.getBusVoltage_V();
     currentMa = solar.getCurrent_mA();
@@ -38,25 +39,22 @@ void loopHandler() {
     shuntVoltage = battery.getShuntVoltage_mV();
     busVoltage = battery.getBusVoltage_V();
     currentMa = battery.getCurrent_mA();
-    loadVoltage = busVoltage + (shuntVoltage / 1000);s
+    loadVoltage = busVoltage + (shuntVoltage / 1000);
     if (Homie.isConnected()) {
       Homie.setNodeProperty(BatteryLoadVoltageNode, "volts").send(String(loadVoltage));
       Homie.setNodeProperty(BatteryCurrentNode, "milliamps").send(String(currentMa));
     }
-    sentOnce = true;
   }
 }
 
 void onHomieEvent(HomieEvent event) {
   switch(event) {
     case HomieEvent::MQTT_CONNECTED:
-      Serial.println("MQTT connected, preparing for deep sleep...");
       sentOnce = false;
       Homie.prepareForSleep();
       break;
     case HomieEvent::READY_FOR_SLEEP:
-      Serial.println("Sleepy time");
-      ESP.deepSleep(sleepTimeS * 1000000);
+      ESP.deepSleep(sleepTimeS * 1000000, RF_NO_CAL);
       break;
   }
 }
@@ -69,7 +67,8 @@ void setup() {
   Homie.setSetupFunction(setupHandler);
   Homie.setLoopFunction(loopHandler);
   Homie.onEvent(onHomieEvent);
-  Homie.setLedPin(12, LOW);
+  Homie.disableLogging();
+  Homie.disableLedFeedback();
 
   BatteryLoadVoltageNode.advertise("unit");
   BatteryLoadVoltageNode.advertise("voltage");
@@ -80,7 +79,7 @@ void setup() {
   SolarLoadVoltageNode.advertise("voltage");
   SolarCurrentNode.advertise("unit");
   SolarCurrentNode.advertise("milliamps");
-  
+
   Homie.setup();
 }
 
