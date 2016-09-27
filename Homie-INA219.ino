@@ -61,6 +61,7 @@ void setup() {
   Homie.setSetupFunction(setupHandler);
   Homie.setLoopFunction(loopHandler);
   Homie.onEvent(onHomieEvent);
+  Homie.setLedPin(12, LOW);
 
   BatteryLoadVoltageNode.advertise("unit");
   BatteryLoadVoltageNode.advertise("voltage");
@@ -76,6 +77,5 @@ void setup() {
 }
 
 void loop() {
-  Homie.setLedPin(12, LOW);
   Homie.loop();
 }
