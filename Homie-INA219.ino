@@ -57,7 +57,7 @@ void setup() {
   Serial.begin(115200);
   battery.begin();
   solar.begin();
-  Homie_setFirmware("ina219", "1.0.1");
+  Homie_setFirmware("ina219", "1.0.2");
   Homie.setSetupFunction(setupHandler);
   Homie.setLoopFunction(loopHandler);
   Homie.onEvent(onHomieEvent);
